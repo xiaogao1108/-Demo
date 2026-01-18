@@ -1,12 +1,14 @@
 import streamlit as st
 import os
 from zhipuai import ZhipuAI
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import json
 import traceback
 import warnings
 warnings.filterwarnings('ignore')
+st.write(f"Matplotlib 版本: {matplotlib.__version__}")
 
 # ========== 字体配置 ==========
 # 使用中文字体
@@ -278,3 +280,4 @@ with st.expander("🔧 系统信息"):
     st.write(f"Matplotlib 版本: {plt.__version__}")
     st.write(f"Streamlit 版本: {st.__version__}")
     st.write(f"当前字体配置: {plt.rcParams['font.sans-serif']}")
+
