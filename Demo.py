@@ -91,62 +91,40 @@ def get_ai_response(prompt):
         return None
 
 # ========== 能力雷达图函数 ==========
-def draw_radar_chart(scores_dict):
-    """
-    根据你的图片描述生成雷达图：
-    1. 中文标签
-    2. 英文标题
-    3. 浅蓝色填充
-    """
-    labels = list(scores_dict.keys())  # 中文标签
-    values = list(scores_dict.values())
+# ========== 最终修复版本 ==========
+def draw_radar_chart_fixed_final(scores_dict):
+    """修复字体问题的雷达图"""
+    import matplotlib
+    import matplotlib.font_manager as fm
     
-    # 确保是5个维度
-    if len(labels) != 5:
-        raise ValueError(f"需要5个维度，但得到{len(labels)}个")
+    # 尝试加载中文字体
+    try:
+        # 查找可用的中文字体
+        font_path = None
+        for font in fm.findSystemFonts():
+            if any(name in font.lower() for name in ['yahei', 'simhei', 'msyh', 'simkai']):
+                font_path = font
+                break
+        
+        if font_path:
+            font_prop = fm.FontProperties(fname=font_path)
+            matplotlib.rcParams['font.family'] = font_prop.get_name()
+        else:
+            # 回退方案：使用英文标签
+            english_labels = {
+                "专业基础": "Knowledge",
+                "技能匹配": "Skills", 
+                "学习能力": "Learning",
+                "实践经验": "Experience",
+                "职业认知": "Awareness"
+            }
+            new_labels = {english_labels[k]: v for k, v in scores_dict.items()}
+            scores_dict = new_labels
+    except:
+        pass
     
-    # 转换为雷达图坐标
-    num_vars = len(labels)
-    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    
-    # 闭合图形
-    values += values[:1]
-    angles += angles[:1]
-    
-    # 创建图形
-    fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-    
-    # 设置背景
-    ax.set_facecolor('white')
-    fig.patch.set_facecolor('white')
-    
-    # 绘制雷达图 - 使用浅蓝色填充
-    ax.plot(angles, values, 'o-', linewidth=2, color='#1f77b4')  # 蓝色线条
-    ax.fill(angles, values, alpha=0.25, color='#a6cee3')  # 浅蓝色填充
-    
-    # 设置标签 - 使用中文标签
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(labels, fontsize=12)
-    
-    # 设置径向网格和标签
-    ax.set_yticks([0, 20, 40, 60, 80, 100])
-    ax.set_yticklabels(['0', '20', '40', '60', '80', '100'], fontsize=9)
-    ax.set_ylim(0, 100)
-    
-    # 网格样式
-    ax.grid(True, alpha=0.3)
-    
-    # 标题 - 使用英文标题
-    ax.set_title("Personal Ability Radar Chart", 
-                 fontsize=16, fontweight='bold', pad=20)
-    
-    # 添加签名（可选）
-    fig.text(0.5, 0.02, "陈翰熙", ha='center', fontsize=10, style='italic', alpha=0.7)
-    
-    # 调整布局防止标签被截断
-    plt.tight_layout()
-    
-    return fig
+    # 继续原有的绘图逻辑...
+    return draw_radar_chart(scores_dict)  # 使用你原有的绘图函数
 
 # ========== 从 AI 输出中提取 JSON ==========
 def extract_json(text):
@@ -262,3 +240,4 @@ st.caption("本 Demo 用于课程展示与原型验证，结果仅供参考。")
 with st.expander("🔧 调试信息"):
     st.write("**API状态:** 已连接" if API_KEY else "未连接")
     st.write(f"**字体配置:** {plt.rcParams['font.sans-serif']}")
+
