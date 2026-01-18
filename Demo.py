@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # ========== 字体配置 ==========
-# 按照图片样式配置
+# 使用中文字体
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans', 'Arial Unicode MS', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 plt.rcParams['figure.autolayout'] = True
@@ -112,7 +112,7 @@ def draw_radar_chart(scores_dict):
     angles_closed = angles + angles[:1]
     
     # 创建图形，按照图片比例
-    fig, ax = plt.subplots(figsize=(9, 9), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
     
     # 设置背景为纯白色
     ax.set_facecolor('white')
@@ -129,11 +129,11 @@ def draw_radar_chart(scores_dict):
     
     # 设置中文标签
     try:
-        ax.set_xticklabels(labels, fontsize=13, fontweight='bold')
+        ax.set_xticklabels(labels, fontsize=12, fontweight='bold')
     except:
         # 如果中文字体失败，使用英文标签
         english_labels = ["Knowledge", "Skills", "Learning", "Experience", "Awareness"]
-        ax.set_xticklabels(english_labels, fontsize=12, fontweight='bold')
+        ax.set_xticklabels(english_labels, fontsize=11, fontweight='bold')
     
     # 设置径向网格
     ax.set_yticks([0, 20, 40, 60, 80, 100])
@@ -145,39 +145,29 @@ def draw_radar_chart(scores_dict):
     ax.grid(True, alpha=0.3, color='gray', linestyle='-', linewidth=0.8)
     
     # 设置标题
-    ax.set_title("个人能力雷达图", fontsize=16, fontweight='bold', pad=25, color='#333333')
-    
-    # 在每个数据点添加数值标签
-    for i, (angle, value) in enumerate(zip(angles, values)):
-        # 在雷达图外部显示数值
-        x = np.cos(angle) * 105
-        y = np.sin(angle) * 105
-        ax.text(angle, 105, f'{value:.1f}', 
-                ha='center', va='center', 
-                fontsize=10, fontweight='bold',
-                bbox=dict(boxstyle='round,pad=0.2', 
-                         facecolor='#FFF176',  # 浅黄色背景
-                         edgecolor='#FFD700',  # 金色边框
-                         alpha=0.9))
+    ax.set_title("个人能力雷达图", fontsize=14, fontweight='bold', pad=20, color='#333333')
     
     # 调整布局
     plt.tight_layout()
     
     return fig
 
-# ========== 创建评分详情表格 ==========
-def create_score_table(scores):
-    """创建图片中的评分详情表格"""
+# ========== 创建评分详情卡片 ==========
+def create_score_cards(scores):
+    """创建图片中的黄色评分卡片"""
     html = '''
     <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <h4 style="margin-bottom: 15px; color: #333;">能力评分详情</h4>
         <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
     '''
     
+    # 黄色系背景色
+    colors = ['#FFF9C4', '#FFF9C4', '#FFF9C4', '#FFF9C4', '#FFF9C4']
+    
     for i, (key, value) in enumerate(scores.items()):
         html += f'''
-        <div style="flex: 1; min-width: 120px; margin: 5px; padding: 12px; 
-                    background-color: #FFF9C4; border-radius: 6px; 
+        <div style="flex: 1; min-width: 100px; margin: 5px; padding: 12px; 
+                    background-color: {colors[i]}; border-radius: 6px; 
                     text-align: center; border: 1px solid #FFEB3B;">
             <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
                 {key}
@@ -290,14 +280,14 @@ if st.button("🚀 生成职业发展建议", type="primary"):
     except Exception as e:
         st.error(f"❌ 生成雷达图失败: {str(e)}")
     
-    # 显示评分详情表格
-    st.markdown(create_score_table(scores), unsafe_allow_html=True)
+    # 显示评分详情卡片
+    st.markdown(create_score_cards(scores), unsafe_allow_html=True)
     
-    # 添加图片中的说明文字
+    # 添加说明文字
     st.caption("※ 雷达图显示了你在5个关键维度的能力评估")
 
 # ========== 说明 ==========
 st.markdown("---")
 st.caption("本 Demo 用于课程展示与原型验证，结果仅供参考。")
 
-# 移除有问题的版本显示代码
+# 注意：完全移除了有问题的版本显示代码
