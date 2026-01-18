@@ -5,12 +5,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import json
 import traceback
+import matplotlib
 
 # ========== 字体配置 ==========
-plt.rcParams['font.sans-serif'] = ['SimHei', 'DejaVu Sans', 'Arial Unicode MS', 'sans-serif']
-plt.rcParams['axes.unicode_minus'] = False
-plt.rcParams['font.size'] = 10
-plt.rcParams['figure.autolayout'] = True  # 自动调整布局
+# 先尝试中文字体，如果不行就回退到英文
+try:
+    # Windows 常见中文字体
+    chinese_fonts = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans', 'Arial Unicode MS', 'sans-serif']
+    plt.rcParams['font.sans-serif'] = chinese_fonts
+    plt.rcParams['axes.unicode_minus'] = False
+except:
+    # 如果中文字体失败，使用默认字体
+    plt.rcParams['font.sans-serif'] = ['DejaVu Sans']
+    plt.rcParams['axes.unicode_minus'] = False
 
 # ========== API Key ==========
 API_KEY = "cfc7dad8acc1428a9013b7a0d186ee36.6GBWBrFXUTi0L210"
@@ -90,47 +97,85 @@ def get_ai_response(prompt):
         st.error(f"❌ API调用失败: {str(e)}")
         return None
 
-# ========== 能力雷达图函数 ==========
-# ========== 最终修复版本 ==========
-def draw_radar_chart_fixed_final(scores_dict):
-    """修复字体问题的雷达图"""
-    import matplotlib
-    import matplotlib.font_manager as fm
+# ========== 修复的雷达图函数 ==========
+def draw_radar_chart(scores_dict):
+    """
+    绘制个人能力雷达图
+    """
+    # 获取标签和值
+    labels = list(scores_dict.keys())
+    values = list(scores_dict.values())
     
-    # 尝试加载中文字体
+    # 确保是5个维度
+    if len(labels) != 5:
+        st.error(f"❌ 需要5个维度，但得到{len(labels)}个")
+        return None
+    
+    # 为雷达图准备数据
+    num_vars = 5
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    
+    # 闭合图形
+    values_closed = values + values[:1]
+    angles_closed = angles + angles[:1]
+    
+    # 创建图形
+    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+    
+    # 绘制雷达图
+    ax.plot(angles_closed, values_closed, 'o-', linewidth=2, color='#1E90FF', markersize=8)
+    ax.fill(angles_closed, values_closed, alpha=0.25, color='#87CEEB')
+    
+    # 设置标签 - 使用中文字体
+    ax.set_xticks(angles)
+    
+    # 尝试使用中文标签，如果失败则用英文标签
     try:
-        # 查找可用的中文字体
-        font_path = None
-        for font in fm.findSystemFonts():
-            if any(name in font.lower() for name in ['yahei', 'simhei', 'msyh', 'simkai']):
-                font_path = font
-                break
-        
-        if font_path:
-            font_prop = fm.FontProperties(fname=font_path)
-            matplotlib.rcParams['font.family'] = font_prop.get_name()
-        else:
-            # 回退方案：使用英文标签
-            english_labels = {
-                "专业基础": "Knowledge",
-                "技能匹配": "Skills", 
-                "学习能力": "Learning",
-                "实践经验": "Experience",
-                "职业认知": "Awareness"
-            }
-            new_labels = {english_labels[k]: v for k, v in scores_dict.items()}
-            scores_dict = new_labels
+        ax.set_xticklabels(labels, fontsize=12, fontweight='bold')
     except:
-        pass
+        # 如果中文字体失败，使用英文标签
+        english_labels = {
+            "专业基础": "Knowledge",
+            "技能匹配": "Skills", 
+            "学习能力": "Learning",
+            "实践经验": "Experience",
+            "职业认知": "Awareness"
+        }
+        labels_eng = [english_labels.get(label, label) for label in labels]
+        ax.set_xticklabels(labels_eng, fontsize=12, fontweight='bold')
     
-    # 继续原有的绘图逻辑...
-    return draw_radar_chart(scores_dict)  # 使用你原有的绘图函数
+    # 设置径向网格
+    ax.set_yticks([0, 20, 40, 60, 80, 100])
+    ax.set_yticklabels(['0', '20', '40', '60', '80', '100'], fontsize=10, color='gray')
+    ax.set_ylim(0, 100)
+    ax.set_rlabel_position(30)
+    
+    # 添加网格
+    ax.grid(True, alpha=0.3, linestyle='--', linewidth=0.5)
+    
+    # 设置标题
+    try:
+        ax.set_title("个人能力雷达图", fontsize=16, fontweight='bold', pad=20)
+    except:
+        ax.set_title("Personal Ability Radar", fontsize=16, fontweight='bold', pad=20)
+    
+    # 在每个数据点添加数值
+    for angle, value in zip(angles, values):
+        x = np.cos(angle) * 105
+        y = np.sin(angle) * 105
+        ax.text(angle, 105, f'{value:.0f}', 
+                ha='center', va='center', 
+                fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7))
+    
+    # 调整布局
+    plt.tight_layout()
+    
+    return fig
 
 # ========== 从 AI 输出中提取 JSON ==========
 def extract_json(text):
-    """
-    从 AI 输出中提取第一个合法 JSON 对象
-    """
+    """从 AI 输出中提取 JSON 数据"""
     if not text:
         return None
     
@@ -144,8 +189,8 @@ def extract_json(text):
             # 验证是否能解析
             json.loads(json_str)
             return json_str
-    except:
-        pass
+    except Exception as e:
+        st.warning(f"⚠️ JSON 提取警告: {str(e)}")
     
     return None
 
@@ -191,8 +236,11 @@ if st.button("🚀 生成职业发展建议", type="primary"):
                     st.error(f"❌ 缺少能力维度: {key}")
                     st.stop()
                 if not isinstance(scores[key], (int, float)):
-                    st.error(f"❌ 维度 {key} 的值必须是数字")
-                    st.stop()
+                    try:
+                        scores[key] = float(scores[key])
+                    except:
+                        st.error(f"❌ 维度 {key} 的值必须是数字")
+                        st.stop()
                 if scores[key] < 0 or scores[key] > 100:
                     st.warning(f"⚠️ 维度 {key} 的评分 {scores[key]} 超出 0-100 范围，已自动调整")
                     scores[key] = max(0, min(100, scores[key]))
@@ -220,24 +268,42 @@ if st.button("🚀 生成职业发展建议", type="primary"):
     # 显示评分表格
     st.markdown("#### 📊 能力评分详情")
     cols = st.columns(5)
-    for idx, (key, value) in enumerate(scores.items()):
-        cols[idx].metric(key, f"{value:.1f}")
+    score_items = list(scores.items())
+    for idx in range(5):
+        with cols[idx]:
+            key, value = score_items[idx]
+            st.metric(key, f"{value:.1f}")
     
     # 生成雷达图
     try:
-        fig = draw_radar_chart(scores)
-        st.pyplot(fig)
-        st.caption("📋 雷达图显示了你在5个关键维度的能力评估")
+        fig = draw_radar_chart(scores)  # 这里调用了定义的函数
+        if fig:
+            st.pyplot(fig)
+            st.caption("📋 雷达图显示了你在5个关键维度的能力评估")
+        else:
+            st.error("❌ 雷达图生成失败")
     except Exception as e:
         st.error(f"❌ 生成雷达图失败: {str(e)}")
         st.code(traceback.format_exc())
+        st.info("💡 尝试显示柱状图作为替代...")
+        
+        # 显示柱状图作为替代
+        fig_bar, ax_bar = plt.subplots(figsize=(10, 4))
+        bars = ax_bar.bar(scores.keys(), scores.values(), color=['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7'])
+        ax_bar.set_ylabel('分数', fontsize=12)
+        ax_bar.set_title('能力评分柱状图', fontsize=14, fontweight='bold')
+        ax_bar.set_ylim(0, 100)
+        
+        # 在每个柱子上添加数值
+        for bar in bars:
+            height = bar.get_height()
+            ax_bar.text(bar.get_x() + bar.get_width()/2., height + 1,
+                       f'{height:.0f}', ha='center', va='bottom', fontsize=10)
+        
+        plt.xticks(rotation=15)
+        plt.tight_layout()
+        st.pyplot(fig_bar)
 
 # ========== 说明 ==========
 st.markdown("---")
 st.caption("本 Demo 用于课程展示与原型验证，结果仅供参考。")
-
-# 调试信息（可折叠）
-with st.expander("🔧 调试信息"):
-    st.write("**API状态:** 已连接" if API_KEY else "未连接")
-    st.write(f"**字体配置:** {plt.rcParams['font.sans-serif']}")
-
