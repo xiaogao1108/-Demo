@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 from zhipuai import ZhipuAI
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import json
@@ -9,10 +8,8 @@ import traceback
 import warnings
 warnings.filterwarnings('ignore')
 
-st.write(f"Matplotlib 版本: {matplotlib.__version__}")
-
 # ========== 字体配置 ==========
-# 使用中文字体
+# 按照图片样式配置
 plt.rcParams['font.sans-serif'] = ['SimHei', 'Microsoft YaHei', 'DejaVu Sans', 'Arial Unicode MS', 'sans-serif']
 plt.rcParams['axes.unicode_minus'] = False
 plt.rcParams['figure.autolayout'] = True
@@ -95,9 +92,9 @@ def get_ai_response(prompt):
         st.error(f"❌ API调用失败: {str(e)}")
         return None
 
-# ========== 雷达图函数 ==========
+# ========== 按照图片样式绘制雷达图 ==========
 def draw_radar_chart(scores_dict):
-    """绘制个人能力雷达图"""
+    """完全按照图片样式绘制雷达图"""
     # 获取标签和值
     labels = list(scores_dict.keys())
     values = list(scores_dict.values())
@@ -114,51 +111,88 @@ def draw_radar_chart(scores_dict):
     values_closed = values + values[:1]
     angles_closed = angles + angles[:1]
     
-    # 创建图形
-    fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(polar=True))
+    # 创建图形，按照图片比例
+    fig, ax = plt.subplots(figsize=(9, 9), subplot_kw=dict(polar=True))
     
-    # 设置背景
+    # 设置背景为纯白色
     ax.set_facecolor('white')
     fig.patch.set_facecolor('white')
     
-    # 绘制雷达图
+    # 绘制雷达图 - 浅蓝色多边形
     ax.plot(angles_closed, values_closed, 'o-', linewidth=2, 
-            color='#1E90FF', markersize=8, markerfacecolor='white')
-    ax.fill(angles_closed, values_closed, alpha=0.25, color='#87CEEB')
+            color='#1E90FF', markersize=8, markerfacecolor='white', 
+            markeredgewidth=1.5, markeredgecolor='#1E90FF')
+    ax.fill(angles_closed, values_closed, alpha=0.2, color='#87CEEB')
     
-    # 设置标签
+    # 设置标签位置
     ax.set_xticks(angles)
     
-    # 尝试设置中文标签
+    # 设置中文标签
     try:
-        ax.set_xticklabels(labels, fontsize=12, fontweight='bold')
+        ax.set_xticklabels(labels, fontsize=13, fontweight='bold')
     except:
         # 如果中文字体失败，使用英文标签
-        english_labels = {
-            "专业基础": "Knowledge",
-            "技能匹配": "Skills", 
-            "学习能力": "Learning",
-            "实践经验": "Experience", 
-            "职业认知": "Awareness"
-        }
-        labels_eng = [english_labels.get(label, label) for label in labels]
-        ax.set_xticklabels(labels_eng, fontsize=12, fontweight='bold')
+        english_labels = ["Knowledge", "Skills", "Learning", "Experience", "Awareness"]
+        ax.set_xticklabels(english_labels, fontsize=12, fontweight='bold')
     
     # 设置径向网格
     ax.set_yticks([0, 20, 40, 60, 80, 100])
-    ax.set_yticklabels(['0', '20', '40', '60', '80', '100'], fontsize=10, color='gray')
+    ax.set_yticklabels(['0', '20', '40', '60', '80', '100'], 
+                       fontsize=9, color='gray')
     ax.set_ylim(0, 100)
     
+    # 设置网格样式
+    ax.grid(True, alpha=0.3, color='gray', linestyle='-', linewidth=0.8)
+    
     # 设置标题
-    try:
-        ax.set_title("个人能力雷达图", fontsize=16, fontweight='bold', pad=20)
-    except:
-        ax.set_title("Ability Radar Chart", fontsize=16, fontweight='bold', pad=20)
+    ax.set_title("个人能力雷达图", fontsize=16, fontweight='bold', pad=25, color='#333333')
+    
+    # 在每个数据点添加数值标签
+    for i, (angle, value) in enumerate(zip(angles, values)):
+        # 在雷达图外部显示数值
+        x = np.cos(angle) * 105
+        y = np.sin(angle) * 105
+        ax.text(angle, 105, f'{value:.1f}', 
+                ha='center', va='center', 
+                fontsize=10, fontweight='bold',
+                bbox=dict(boxstyle='round,pad=0.2', 
+                         facecolor='#FFF176',  # 浅黄色背景
+                         edgecolor='#FFD700',  # 金色边框
+                         alpha=0.9))
     
     # 调整布局
     plt.tight_layout()
     
     return fig
+
+# ========== 创建评分详情表格 ==========
+def create_score_table(scores):
+    """创建图片中的评分详情表格"""
+    html = '''
+    <div style="background-color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h4 style="margin-bottom: 15px; color: #333;">能力评分详情</h4>
+        <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+    '''
+    
+    for i, (key, value) in enumerate(scores.items()):
+        html += f'''
+        <div style="flex: 1; min-width: 120px; margin: 5px; padding: 12px; 
+                    background-color: #FFF9C4; border-radius: 6px; 
+                    text-align: center; border: 1px solid #FFEB3B;">
+            <div style="font-size: 12px; color: #666; margin-bottom: 5px;">
+                {key}
+            </div>
+            <div style="font-size: 18px; font-weight: bold; color: #333;">
+                {value:.1f}
+            </div>
+        </div>
+        '''
+    
+    html += '''
+        </div>
+    </div>
+    '''
+    return html
 
 # ========== 从 AI 输出中提取 JSON ==========
 def extract_json(text):
@@ -239,7 +273,7 @@ if st.button("🚀 生成职业发展建议", type="primary"):
             st.code(traceback.format_exc())
             st.stop()
     
-    # 展示文本结果
+    # 展示结果
     st.success("✅ 分析完成")
     
     st.markdown("---")
@@ -248,38 +282,22 @@ if st.button("🚀 生成职业发展建议", type="primary"):
     
     st.markdown("---")
     
-    # 显示能力评分详情
-    st.markdown("### 📊 能力评分详情")
-    
-    # 创建5列的指标卡片
-    cols = st.columns(5)
-    score_items = list(scores.items())
-    
-    for idx in range(5):
-        with cols[idx]:
-            key, value = score_items[idx]
-            st.metric(label=key, value=f"{value:.1f}")
-    
-    st.markdown("---")
-    st.markdown("### 📈 个人能力雷达图")
-    
     # 生成雷达图
+    st.markdown("### 📈 个人能力雷达图")
     try:
         fig = draw_radar_chart(scores)
         st.pyplot(fig)
-        st.caption("📋 雷达图显示了你在5个关键维度的能力评估")
     except Exception as e:
         st.error(f"❌ 生成雷达图失败: {str(e)}")
+    
+    # 显示评分详情表格
+    st.markdown(create_score_table(scores), unsafe_allow_html=True)
+    
+    # 添加图片中的说明文字
+    st.caption("※ 雷达图显示了你在5个关键维度的能力评估")
 
 # ========== 说明 ==========
 st.markdown("---")
 st.caption("本 Demo 用于课程展示与原型验证，结果仅供参考。")
 
-# 添加调试信息
-with st.expander("🔧 系统信息"):
-    st.write(f"Python 版本: {os.sys.version}")
-    st.write(f"Matplotlib 版本: {plt.__version__}")
-    st.write(f"Streamlit 版本: {st.__version__}")
-    st.write(f"当前字体配置: {plt.rcParams['font.sans-serif']}")
-
-
+# 移除有问题的版本显示代码
