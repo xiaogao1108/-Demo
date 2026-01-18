@@ -87,10 +87,9 @@ def get_ai_response(prompt):
 
 # ========== 能力雷达图函数 ==========
 def draw_radar_chart(scores_dict):
-    labels = list(scores_dict.keys())
+    labels = list(scores_dict.keys())  # 英文标签
     values = list(scores_dict.values())
 
-    # 闭合雷达图
     angles = np.linspace(0, 2 * np.pi, len(labels), endpoint=False)
     values = values + values[:1]
     angles = np.concatenate([angles, [angles[0]]])
@@ -99,11 +98,12 @@ def draw_radar_chart(scores_dict):
     ax.plot(angles, values, linewidth=2)
     ax.fill(angles, values, alpha=0.25)
 
-    ax.set_thetagrids(angles[:-1] * 180 / np.pi, labels)
+    ax.set_thetagrids(angles[:-1] * 180 / np.pi, labels)  # 英文标签
     ax.set_ylim(0, 100)
-    ax.set_title("个人能力雷达图")
+    ax.set_title("Personal Ability Radar Chart")          # 英文标题
 
     return fig
+
 
 # ========== 从 AI 输出中提取 JSON ==========
 def extract_json(text):
@@ -169,3 +169,4 @@ if st.button("🚀 生成职业发展建议"):
 # ========== 说明 ==========
 st.markdown("---")
 st.caption("本 Demo 用于课程展示与原型验证，结果仅供参考。")
+
